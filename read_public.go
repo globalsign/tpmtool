@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/x509"
 	"encoding/binary"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -67,8 +69,8 @@ func readPublic() {
 		}
 	}
 
-	// Write the raw public area, if required.
-	if *fReadPublicOut != "" || !*fReadPublicText {
+	// Write the raw public area, if requested.
+	if *fReadPublicOut != "" || (!*fReadPublicText && !*fReadPublicPubOut) {
 		var f *os.File
 		var err error
 
@@ -93,73 +95,89 @@ func readPublic() {
 		}
 	}
 
-	// Return if we're not printing the public area as text.
-	if !*fReadPublicText {
-		return
-	}
+	// Write the public area as text, if requested.
+	if *fReadPublicText {
+		const fw = 20
 
-	const fw = 20
+		fmt.Printf("%-*s: %s\n", fw, "Type", pgtpm.Algorithm(pub.Type).String())
+		fmt.Printf("%-*s: %s\n", fw, "Name algorithm", pgtpm.Algorithm(pub.NameAlg).String())
 
-	fmt.Printf("%-*s: %s\n", fw, "Type", pgtpm.Algorithm(pub.Type).String())
-	fmt.Printf("%-*s: %s\n", fw, "Name algorithm", pgtpm.Algorithm(pub.NameAlg).String())
+		if nameHash != nil {
+			fmt.Printf("%-*s: %s (%s)\n", fw, "Name", hexEncodeBytes(nameHash[2:]), nameAlg.String())
+		}
 
-	if nameHash != nil {
-		fmt.Printf("%-*s: %s (%s)\n", fw, "Name", hexEncodeBytes(nameHash[2:]), nameAlg.String())
-	}
+		if qnameHash != nil {
+			fmt.Printf("%-*s: %s (%s)\n", fw, "Qualified nameHash", hexEncodeBytes(qnameHash[2:]), qnameAlg.String())
+		}
 
-	if qnameHash != nil {
-		fmt.Printf("%-*s: %s (%s)\n", fw, "Qualified nameHash", hexEncodeBytes(qnameHash[2:]), qnameAlg.String())
-	}
+		if pub.Attributes != 0 {
+			var first = true
 
-	if pub.Attributes != 0 {
-		var first = true
-
-		for _, a := range []pgtpm.ObjectAttribute{
-			pgtpm.TPMA_OBJECT_FIXEDTPM,
-			pgtpm.TPMA_OBJECT_STCLEAR,
-			pgtpm.TPMA_OBJECT_FIXEDPARENT,
-			pgtpm.TPMA_OBJECT_SENSITIVEDATAORIGIN,
-			pgtpm.TPMA_OBJECT_USERWITHAUTH,
-			pgtpm.TPMA_OBJECT_ADMINWITHPOLICY,
-			pgtpm.TPMA_OBJECT_NODA,
-			pgtpm.TPMA_OBJECT_ENCRYPTEDDUPLICATION,
-			pgtpm.TPMA_OBJECT_RESTRICTED,
-			pgtpm.TPMA_OBJECT_DECRYPT,
-			pgtpm.TPMA_OBJECT_SIGN_ENCRYPT,
-		} {
-			if pgtpm.ObjectAttribute(pub.Attributes)&a != 0 {
-				var label string
-				if first {
-					label = "Attributes"
-					first = false
+			for _, a := range []pgtpm.ObjectAttribute{
+				pgtpm.TPMA_OBJECT_FIXEDTPM,
+				pgtpm.TPMA_OBJECT_STCLEAR,
+				pgtpm.TPMA_OBJECT_FIXEDPARENT,
+				pgtpm.TPMA_OBJECT_SENSITIVEDATAORIGIN,
+				pgtpm.TPMA_OBJECT_USERWITHAUTH,
+				pgtpm.TPMA_OBJECT_ADMINWITHPOLICY,
+				pgtpm.TPMA_OBJECT_NODA,
+				pgtpm.TPMA_OBJECT_ENCRYPTEDDUPLICATION,
+				pgtpm.TPMA_OBJECT_RESTRICTED,
+				pgtpm.TPMA_OBJECT_DECRYPT,
+				pgtpm.TPMA_OBJECT_SIGN_ENCRYPT,
+			} {
+				if pgtpm.ObjectAttribute(pub.Attributes)&a != 0 {
+					var label string
+					if first {
+						label = "Attributes"
+						first = false
+					}
+					fmt.Printf("%-*s: %s\n", fw, label, a.String())
 				}
-				fmt.Printf("%-*s: %s\n", fw, label, a.String())
 			}
 		}
-	}
 
-	if len(pub.AuthPolicy) > 0 {
-		fmt.Printf("%-*s: %s\n", fw, "Auth policy", hexEncodeBytes([]byte(pub.AuthPolicy)))
-	}
-
-	switch {
-	case pub.RSAParameters != nil:
-		if pub.RSAParameters.Symmetric != nil {
-			fmt.Printf("%-*s: %s\n", fw, "Symmetric algorithm", pgtpm.Algorithm(pub.RSAParameters.Symmetric.Alg).String())
-			fmt.Printf("%-*s: %d\n", fw, "Symmetric key bits", pub.RSAParameters.Symmetric.KeyBits)
-			fmt.Printf("%-*s: %s\n", fw, "Symmetric mode", pgtpm.Algorithm(pub.RSAParameters.Symmetric.Mode).String())
+		if len(pub.AuthPolicy) > 0 {
+			fmt.Printf("%-*s: %s\n", fw, "Auth policy", hexEncodeBytes([]byte(pub.AuthPolicy)))
 		}
 
-		if pub.RSAParameters.Sign != nil {
-			fmt.Printf("%-*s: %s\n", fw, "Signature algorithm", pgtpm.Algorithm(pub.RSAParameters.Sign.Alg).String())
-			fmt.Printf("%-*s: %s\n", fw, "Signature hash", pgtpm.Algorithm(pub.RSAParameters.Sign.Hash).String())
+		switch {
+		case pub.RSAParameters != nil:
+			if pub.RSAParameters.Symmetric != nil {
+				fmt.Printf("%-*s: %s\n", fw, "Symmetric algorithm", pgtpm.Algorithm(pub.RSAParameters.Symmetric.Alg).String())
+				fmt.Printf("%-*s: %d\n", fw, "Symmetric key bits", pub.RSAParameters.Symmetric.KeyBits)
+				fmt.Printf("%-*s: %s\n", fw, "Symmetric mode", pgtpm.Algorithm(pub.RSAParameters.Symmetric.Mode).String())
+			}
+
+			if pub.RSAParameters.Sign != nil {
+				fmt.Printf("%-*s: %s\n", fw, "Signature algorithm", pgtpm.Algorithm(pub.RSAParameters.Sign.Alg).String())
+				fmt.Printf("%-*s: %s\n", fw, "Signature hash", pgtpm.Algorithm(pub.RSAParameters.Sign.Hash).String())
+			}
+
+			fmt.Printf("%-*s: %d\n", fw, "Key bits", pub.RSAParameters.KeyBits)
+
+			var e = pub.RSAParameters.Exponent()
+			fmt.Printf("%-*s: %d (0x%x)\n", fw, "Exponent", e, e)
+
+			outputBigInt("Modulus", fw, pub.RSAParameters.Modulus())
+		}
+	}
+
+	// Write the PEM-encoded public key, if requested.
+	if *fReadPublicPubOut {
+		key, err := pub.Key()
+		if err != nil {
+			log.Fatalf("failed to get public key from public area: %v", err)
 		}
 
-		fmt.Printf("%-*s: %d\n", fw, "Key bits", pub.RSAParameters.KeyBits)
+		der, err := x509.MarshalPKIXPublicKey(key)
+		if err != nil {
+			log.Fatalf("failed to marshal public key: %v", err)
+		}
 
-		var e = pub.RSAParameters.Exponent()
-		fmt.Printf("%-*s: %d (0x%x)\n", fw, "Exponent", e, e)
-
-		outputBigInt("Modulus", fw, pub.RSAParameters.Modulus())
+		fmt.Printf("%s", pem.EncodeToMemory(&pem.Block{
+			Type:  "PUBLIC KEY",
+			Bytes: der,
+		}))
 	}
 }

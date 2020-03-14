@@ -38,15 +38,16 @@ const (
 
 // Flag name constants.
 const (
+	algsFlagName    = "algorithms"
 	allFlagName     = "all"
-	tpmFlagName     = "tpm"
-	helpFlagName    = "help"
 	handleFlagName  = "handle"
-	textFlagName    = "text"
+	handlesFlagName = "handles"
+	helpFlagName    = "help"
 	inFlagName      = "in"
 	outFlagName     = "out"
-	algsFlagName    = "algorithms"
-	handlesFlagName = "handles"
+	pubOutFlagName  = "pubout"
+	textFlagName    = "text"
+	tpmFlagName     = "tpm"
 )
 
 // commands are the application commands.
@@ -86,6 +87,7 @@ var (
 	fReadPublicHelp   = fReadPublicSet.Bool(helpFlagName, false, "p")
 	fReadPublicIn     = fReadPublicSet.String(inFlagName, "", "")
 	fReadPublicOut    = fReadPublicSet.String(outFlagName, "", "")
+	fReadPublicPubOut = fReadPublicSet.Bool(pubOutFlagName, false, "")
 	fReadPublicText   = fReadPublicSet.Bool(textFlagName, false, "")
 	fReadPublicTPM    = fReadPublicSet.String(tpmFlagName, defaultTPMDevice, "")
 )
@@ -229,13 +231,13 @@ func usageCaps() {
 	fmt.Printf("The %s command outputs selected TPM capabilities.\n", capsCommand)
 	fmt.Println()
 
-	const fw = 13
+	const fw = 29
 	fmt.Println("Options:")
 	fmt.Printf("    -%-*s output supported algorithms\n", fw, algsFlagName)
 	fmt.Printf("    -%-*s output all capabilities\n", fw, allFlagName)
 	fmt.Printf("    -%-*s output active handles\n", fw, handlesFlagName)
 	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
-	fmt.Printf("    -%-*s TPM device path or hostname:port (default: %s)\n", fw, tpmFlagName, defaultTPMDevice)
+	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
 	fmt.Println()
 }
 
@@ -247,13 +249,14 @@ func usageReadPublic() {
 	fmt.Printf("The %s command reads the public area for a TPM object.\n", readPublicCommand)
 	fmt.Println()
 
-	const fw = 9
+	const fw = 29
 	fmt.Println("Options:")
-	fmt.Printf("    -%-*s persistent object handle\n", fw, handleFlagName)
+	fmt.Printf("    -%-*s persistent object handle\n", fw, handleFlagName+" <integer>")
 	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
-	fmt.Printf("    -%-*s input file\n", fw, inFlagName)
-	fmt.Printf("    -%-*s output file (default: stdout)\n", fw, outFlagName)
+	fmt.Printf("    -%-*s input file\n", fw, inFlagName+" <path>")
+	fmt.Printf("    -%-*s output file (default: stdout)\n", fw, outFlagName+" <path>")
+	fmt.Printf("    -%-*s output public key in PEM format\n", fw, pubOutFlagName)
 	fmt.Printf("    -%-*s print the public area in text form\n", fw, textFlagName)
-	fmt.Printf("    -%-*s TPM device path or hostname:port (default: %s)\n", fw, tpmFlagName, defaultTPMDevice)
+	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
 	fmt.Println()
 }
