@@ -36,11 +36,12 @@ var commands = []command{
 // caps command flag set.
 var (
 	fCapsSet     = flag.NewFlagSet("caps", flag.ExitOnError)
-	fCapsDevice  = fCapsSet.String("device", "/dev/tpmrm0", "TPM device name")
-	fCapsSeed    = fCapsSet.Int64("seed", 0, "seed for simulated TPM")
-	fCapsHandles = fCapsSet.Bool("handles", false, "handles")
 	fCapsAlgs    = fCapsSet.Bool("algorithms", false, "algorithms")
 	fCapsAll     = fCapsSet.Bool("all", false, "all")
+	fCapsDevice  = fCapsSet.String("device", "/dev/tpmrm0", "TPM device name")
+	fCapsHandles = fCapsSet.Bool("handles", false, "handles")
+	fCapsMSSim   = fCapsSet.String("mssim", "", "mssim")
+	fCapsSeed    = fCapsSet.Int64("seed", 0, "seed for simulated TPM")
 )
 
 func init() {
