@@ -20,7 +20,11 @@ func main() {
 				cmd.flagSet.Parse(os.Args[2:])
 			}
 
-			cmd.cmdFunc()
+			if isFlagPassed(cmd.flagSet, "help") {
+				cmd.usageFunc()
+			} else {
+				cmd.cmdFunc()
+			}
 
 			return
 		}

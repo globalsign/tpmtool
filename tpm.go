@@ -3,38 +3,35 @@ package main
 import (
 	"io"
 	"log"
+	"os"
+	"strings"
 
-	"github.com/google/go-tpm-tools/simulator"
 	"github.com/google/go-tpm/tpm2"
 
 	"github.com/paulgriffiths/pgtpm"
 )
 
-// getTPM opens the TPM associated with the named device, or creates a
-// simulated TPM with the specified seed, if it is not zero, or connects
-// to a Microsoft TPM 2.0 Simulator, if one was specified.
-func getTPM(name string, seed int64, mssim string) io.ReadWriteCloser {
-	if mssim != "" {
-		s, err := pgtpm.NewMSSimulator(mssim)
-		if err != nil {
-			log.Fatalf("couldn't initialize MS TPM simulator: %v", err)
+// getTPM opens the TPM associated with the named device. If the named device
+// cannot be found, and the name is in the form hostname:port, an attempt will
+// be made to open a connection with a Microsoft TPM 2.0 Simulator listening on
+// that port.
+func getTPM(name string) io.ReadWriteCloser {
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) && len(strings.Split(name, ":")) == 2 {
+			s, err := pgtpm.NewMSSimulator(name)
+			if err != nil {
+				log.Fatalf("failed to initialize MS TPM simulator: %v", err)
+			}
+
+			return s
 		}
 
-		return s
-	}
-
-	if seed != 0 {
-		t, err := simulator.GetWithFixedSeedInsecure(seed)
-		if err != nil {
-			log.Fatalf("couldn't get simulated TPM: %v", err)
-		}
-
-		return t
+		log.Fatalf("failed to locate TPM device: %v", err)
 	}
 
 	t, err := tpm2.OpenTPM(name)
 	if err != nil {
-		log.Fatalf("couldn't get TPM device: %v", err)
+		log.Fatalf("failed to open TPM device: %v", err)
 	}
 
 	return t

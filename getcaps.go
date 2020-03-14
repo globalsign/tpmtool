@@ -18,7 +18,7 @@ const (
 
 // outputCaps outputs selected TPM capabilities.
 func outputCaps() {
-	t := getTPM(*fCapsDevice, *fCapsSeed, *fCapsMSSim)
+	t := getTPM(*fCapsTPM)
 	defer t.Close()
 
 	for _, c := range []struct {
