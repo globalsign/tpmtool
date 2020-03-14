@@ -97,7 +97,7 @@ func readPublic() {
 
 	// Write the public area as text, if requested.
 	if *fReadPublicText {
-		const fw = 20
+		const fw = 21
 
 		fmt.Printf("%-*s: %s\n", fw, "Type", pgtpm.Algorithm(pub.Type).String())
 		fmt.Printf("%-*s: %s\n", fw, "Name algorithm", pgtpm.Algorithm(pub.NameAlg).String())
@@ -107,7 +107,7 @@ func readPublic() {
 		}
 
 		if qnameHash != nil {
-			fmt.Printf("%-*s: %s (%s)\n", fw, "Qualified nameHash", hexEncodeBytes(qnameHash[2:]), qnameAlg.String())
+			fmt.Printf("%-*s: %s (%s)\n", fw, "Qualified name", hexEncodeBytes(qnameHash[2:]), qnameAlg.String())
 		}
 
 		if pub.Attributes != 0 {
@@ -143,23 +143,77 @@ func readPublic() {
 
 		switch {
 		case pub.RSAParameters != nil:
-			if pub.RSAParameters.Symmetric != nil {
-				fmt.Printf("%-*s: %s\n", fw, "Symmetric algorithm", pgtpm.Algorithm(pub.RSAParameters.Symmetric.Alg).String())
-				fmt.Printf("%-*s: %d\n", fw, "Symmetric key bits", pub.RSAParameters.Symmetric.KeyBits)
-				fmt.Printf("%-*s: %s\n", fw, "Symmetric mode", pgtpm.Algorithm(pub.RSAParameters.Symmetric.Mode).String())
+			param := pub.RSAParameters
+
+			if sym := param.Symmetric; sym != nil {
+				fmt.Printf("%-*s: %s\n", fw, "Symmetric algorithm", pgtpm.Algorithm(sym.Alg).String())
+				fmt.Printf("%-*s: %d\n", fw, "Symmetric key bits", sym.KeyBits)
+				fmt.Printf("%-*s: %s\n", fw, "Symmetric mode", pgtpm.Algorithm(sym.Mode).String())
 			}
 
-			if pub.RSAParameters.Sign != nil {
-				fmt.Printf("%-*s: %s\n", fw, "Signature algorithm", pgtpm.Algorithm(pub.RSAParameters.Sign.Alg).String())
-				fmt.Printf("%-*s: %s\n", fw, "Signature hash", pgtpm.Algorithm(pub.RSAParameters.Sign.Hash).String())
+			if sig := param.Sign; sig != nil {
+				fmt.Printf("%-*s: %s\n", fw, "Signature algorithm", pgtpm.Algorithm(sig.Alg).String())
+				fmt.Printf("%-*s: %s\n", fw, "Signature hash", pgtpm.Algorithm(sig.Hash).String())
 			}
 
-			fmt.Printf("%-*s: %d\n", fw, "Key bits", pub.RSAParameters.KeyBits)
+			fmt.Printf("%-*s: %d\n", fw, "Key bits", param.KeyBits)
 
-			var e = pub.RSAParameters.Exponent()
+			var e = param.Exponent()
 			fmt.Printf("%-*s: %d (0x%x)\n", fw, "Exponent", e, e)
 
-			outputBigInt("Modulus", fw, pub.RSAParameters.Modulus())
+			outputBigInt("Modulus", fw, param.Modulus())
+
+		case pub.ECCParameters != nil:
+			param := pub.ECCParameters
+
+			if sym := param.Symmetric; sym != nil {
+				fmt.Printf("%-*s: %s\n", fw, "Symmetric algorithm", pgtpm.Algorithm(sym.Alg).String())
+				fmt.Printf("%-*s: %d\n", fw, "Symmetric key bits", sym.KeyBits)
+				fmt.Printf("%-*s: %s\n", fw, "Symmetric mode", pgtpm.Algorithm(sym.Mode).String())
+			}
+
+			if sig := param.Sign; sig != nil {
+				fmt.Printf("%-*s: %s\n", fw, "Signature algorithm", pgtpm.Algorithm(sig.Alg).String())
+				fmt.Printf("%-*s: %s\n", fw, "Signature hash", pgtpm.Algorithm(sig.Hash).String())
+
+				if param.Sign.Alg.UsesCount() {
+					fmt.Printf("%-*s: %d\n", fw, "Signature count", pgtpm.Algorithm(sig.Count))
+				}
+			}
+
+			fmt.Printf("%-*s: %s\n", fw, "Elliptic curve", pgtpm.EllipticCurve(param.CurveID).String())
+
+			if kdf := param.KDF; kdf != nil {
+				fmt.Printf("%-*s: %s\n", fw, "KDF scheme algorithm", pgtpm.Algorithm(kdf.Alg).String())
+				fmt.Printf("%-*s: %s\n", fw, "KDF scheme hash", pgtpm.Algorithm(kdf.Hash).String())
+			}
+
+			outputBigInt("X point", fw, param.Point.X())
+			outputBigInt("Y point", fw, param.Point.Y())
+
+		case pub.SymCipherParameters != nil:
+			param := pub.SymCipherParameters
+
+			if sym := param.Symmetric; sym != nil {
+				fmt.Printf("%-*s: %s\n", fw, "Symmetric algorithm", pgtpm.Algorithm(sym.Alg).String())
+				fmt.Printf("%-*s: %d\n", fw, "Symmetric key bits", sym.KeyBits)
+				fmt.Printf("%-*s: %s\n", fw, "Symmetric mode", pgtpm.Algorithm(sym.Mode).String())
+			}
+
+			if uniq := param.Unique; len(uniq) > 0 {
+				fmt.Printf("%-*s: %s\n", fw, "Unique", hexEncodeBytes(uniq))
+			}
+
+		case pub.KeyedHashParameters != nil:
+			param := pub.KeyedHashParameters
+
+			fmt.Printf("%-*s: %s\n", fw, "Keyed hash algorithm", pgtpm.Algorithm(param.Alg).String())
+			fmt.Printf("%-*s: %s\n", fw, "Keyed hash hash", pgtpm.Algorithm(param.Hash).String())
+			fmt.Printf("%-*s: %s\n", fw, "Keyed hash KDF", pgtpm.Algorithm(param.KDF).String())
+
+			if uniq := param.Unique; len(uniq) > 0 {
+				fmt.Printf("%-*s: %s\n", fw, "Unique", hexEncodeBytes(uniq))
+			}
 		}
 	}
 
