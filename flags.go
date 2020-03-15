@@ -33,21 +33,25 @@ const (
 const (
 	capsCommand       = "caps"
 	helpCommand       = "help"
+	makeCredCommand   = "makecred"
 	readPublicCommand = "readpublic"
 )
 
 // Flag name constants.
 const (
-	algsFlagName    = "algorithms"
-	allFlagName     = "all"
-	handleFlagName  = "handle"
-	handlesFlagName = "handles"
-	helpFlagName    = "help"
-	inFlagName      = "in"
-	outFlagName     = "out"
-	pubOutFlagName  = "pubout"
-	textFlagName    = "text"
-	tpmFlagName     = "tpm"
+	algsFlagName       = "algorithms"
+	allFlagName        = "all"
+	credOutFlagName    = "credout"
+	handleFlagName     = "handle"
+	handlesFlagName    = "handles"
+	helpFlagName       = "help"
+	inFlagName         = "in"
+	outFlagName        = "out"
+	publicAreaFlagName = "publicarea"
+	pubOutFlagName     = "pubout"
+	secretOutFlagName  = "secretout"
+	textFlagName       = "text"
+	tpmFlagName        = "tpm"
 )
 
 // commands are the application commands.
@@ -61,6 +65,12 @@ var commands = []command{
 		flagSet:   fCapsSet,
 		cmdFunc:   outputCaps,
 		usageFunc: usageCaps,
+	},
+	{
+		name:      makeCredCommand,
+		flagSet:   fMakeCredSet,
+		cmdFunc:   makeCred,
+		usageFunc: usageMakeCred,
 	},
 	{
 		name:      readPublicCommand,
@@ -80,6 +90,18 @@ var (
 	fCapsTPM     = fCapsSet.String(tpmFlagName, defaultTPMDevice, "")
 )
 
+// makecred command flag set.
+var (
+	fMakeCredSet        = flag.NewFlagSet(makeCredCommand, flag.ExitOnError)
+	fMakeCredHandle     handleFlag
+	fMakeCredHelp       = fMakeCredSet.Bool(helpFlagName, false, "p")
+	fMakeCredIn         = fMakeCredSet.String(inFlagName, "", "")
+	fMakeCredCredOut    = fMakeCredSet.String(credOutFlagName, "", "")
+	fMakeCredPublicArea = fMakeCredSet.String(publicAreaFlagName, "", "")
+	fMakeCredSecretOut  = fMakeCredSet.String(secretOutFlagName, "", "")
+	fMakeCredTPM        = fMakeCredSet.String(tpmFlagName, defaultTPMDevice, "")
+)
+
 // readpublic command flag set.
 var (
 	fReadPublicSet    = flag.NewFlagSet(readPublicCommand, flag.ExitOnError)
@@ -93,6 +115,7 @@ var (
 )
 
 func init() {
+	fMakeCredSet.Var(&fMakeCredHandle, handleFlagName, "")
 	fReadPublicSet.Var(&fReadPublicHandle, handleFlagName, "")
 
 	for _, cmd := range commands {
@@ -196,6 +219,22 @@ func ensureExactlyOnePassed(set *flag.FlagSet, names ...string) {
 	}
 }
 
+// ensureAllPassed logs a failure message unless all of the named flags were
+// passed at the command line.
+func ensureAllPassed(set *flag.FlagSet, names ...string) {
+	if len(names) == 0 {
+		panic("at least one name must be passed to ensureAllPassed")
+	}
+
+	if countFlagsPassed(set, names...) != len(names) {
+		if len(names) == 1 {
+			log.Fatalf("-%s must be provided", names[0])
+		} else {
+			log.Fatalf("%s must all be provided", listifyFlagNames(names...))
+		}
+	}
+}
+
 // usageError outputs a brief usage message to standard error and exits with
 // status code 1.
 func usageError() {
@@ -237,6 +276,26 @@ func usageCaps() {
 	fmt.Printf("    -%-*s output all capabilities\n", fw, allFlagName)
 	fmt.Printf("    -%-*s output active handles\n", fw, handlesFlagName)
 	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
+	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
+	fmt.Println()
+}
+
+// usageMakeCred outputs usage information for the makecred command.
+func usageMakeCred() {
+	fmt.Printf("usage: %s %s [options]\n", appName, makeCredCommand)
+	fmt.Println()
+
+	fmt.Printf("The %s command creates an activation credential.\n", makeCredCommand)
+	fmt.Println()
+
+	const fw = 29
+	fmt.Println("Options:")
+	fmt.Printf("    -%-*s credential blob output file\n", fw, credOutFlagName+" <path>")
+	fmt.Printf("    -%-*s persistent object handle of protecting key\n", fw, handleFlagName+" <integer>")
+	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
+	fmt.Printf("    -%-*s input file containing credential (default: stdin)\n", fw, inFlagName+" <path>")
+	fmt.Printf("    -%-*s public area input file\n", fw, publicAreaFlagName+" <path>")
+	fmt.Printf("    -%-*s encrypted secret output file\n", fw, secretOutFlagName+" <path>")
 	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
 	fmt.Println()
 }
