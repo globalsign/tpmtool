@@ -18,8 +18,8 @@ github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANyt
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
-github.com/paulgriffiths/pgtpm v0.0.0-20200314231215-3cf93846364f h1:BNEHrlkztIqo6VcpVf82NnleXOfOc7Gy9Uo1Oe+6VRA=
-github.com/paulgriffiths/pgtpm v0.0.0-20200314231215-3cf93846364f/go.mod h1:LP9YCMB7m2aAhNSJ0ks69WcqdN8NVyGZZSrs/g0T/Bo=
+github.com/paulgriffiths/pgtpm v0.0.0-20200315171307-812eecd04b4a h1:DVj13VRopj2Xx2p8AsaHNZhRdE3tEObY9cTdVf5ii1w=
+github.com/paulgriffiths/pgtpm v0.0.0-20200315171307-812eecd04b4a/go.mod h1:LP9YCMB7m2aAhNSJ0ks69WcqdN8NVyGZZSrs/g0T/Bo=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=

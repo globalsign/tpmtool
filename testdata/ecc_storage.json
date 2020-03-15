@@ -1,0 +1,20 @@
+{
+    "type": "TPM2_ALG_ECC",
+    "name_alg": "TPM2_ALG_SHA256",
+    "attributes": [
+        "TPMA_OBJECT_RESTRICTED",
+        "TPMA_OBJECT_USERWITHAUTH",
+        "TPMA_OBJECT_DECRYPT",
+        "TPMA_OBJECT_FIXEDTPM",
+        "TPMA_OBJECT_FIXEDPARENT",
+        "TPMA_OBJECT_SENSITIVEDATAORIGIN"
+    ],
+    "ecc": {
+        "symmetric": {
+            "algorithm": "TPM2_ALG_AES",
+            "key_bits": 128,
+            "mode": "TPM2_ALG_CFB"
+        },
+        "elliptic_curve": "TPM2_ECC_NIST_P256"
+    }
+}

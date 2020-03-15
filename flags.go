@@ -31,12 +31,14 @@ const (
 
 // Command name constants.
 const (
-	activateCommand   = "activate"
-	capsCommand       = "caps"
-	evictCommand      = "evict"
-	helpCommand       = "help"
-	makeCredCommand   = "makecred"
-	readPublicCommand = "readpublic"
+	activateCommand      = "activate"
+	capsCommand          = "caps"
+	createPrimaryCommand = "createprimary"
+	evictCommand         = "evict"
+	flushCommand         = "flush"
+	helpCommand          = "help"
+	makeCredCommand      = "makecred"
+	readPublicCommand    = "readpublic"
 )
 
 // Flag name constants.
@@ -50,14 +52,17 @@ const (
 	helpFlagName              = "help"
 	inFlagName                = "in"
 	outFlagName               = "out"
+	ownerFlagName             = "owner"
 	ownerPasswordFlagName     = "ownerpass"
 	passwordFlagName          = "pass"
+	persistentFlagName        = "persistent"
 	protectorFlagName         = "protector"
 	protectorPasswordFlagName = "protectorpass"
 	publicAreaFlagName        = "publicarea"
 	pubOutFlagName            = "pubout"
 	secretInFlagName          = "secretin"
 	secretOutFlagName         = "secretout"
+	templateFlagName          = "template"
 	textFlagName              = "text"
 	tpmFlagName               = "tpm"
 )
@@ -81,10 +86,22 @@ var commands = []command{
 		usageFunc: usageCaps,
 	},
 	{
+		name:      createPrimaryCommand,
+		flagSet:   fCreatePrimarySet,
+		cmdFunc:   createPrimary,
+		usageFunc: usageCreatePrimary,
+	},
+	{
 		name:      evictCommand,
 		flagSet:   fEvictSet,
 		cmdFunc:   evictObject,
 		usageFunc: usageEvict,
+	},
+	{
+		name:      flushCommand,
+		flagSet:   fFlushSet,
+		cmdFunc:   flushContext,
+		usageFunc: usageFlush,
 	},
 	{
 		name:      makeCredCommand,
@@ -123,6 +140,17 @@ var (
 	fCapsTPM     = fCapsSet.String(tpmFlagName, defaultTPMDevice, "")
 )
 
+// createprimary command flag set.
+var (
+	fCreatePrimarySet           = flag.NewFlagSet(createPrimaryCommand, flag.ExitOnError)
+	fCreatePrimaryPersistent    handleFlag
+	fCreatePrimaryHelp          = fCreatePrimarySet.Bool(helpFlagName, false, "")
+	fCreatePrimaryOwnerPassword = fCreatePrimarySet.String(ownerPasswordFlagName, "", "")
+	fCreatePrimaryPassword      = fCreatePrimarySet.String(passwordFlagName, "", "")
+	fCreatePrimaryTemplate      = fCreatePrimarySet.String(templateFlagName, "", "")
+	fCreatePrimaryTPM           = fCreatePrimarySet.String(tpmFlagName, defaultTPMDevice, "")
+)
+
 // evict command flag set.
 var (
 	fEvictSet           = flag.NewFlagSet(evictCommand, flag.ExitOnError)
@@ -130,6 +158,14 @@ var (
 	fEvictHelp          = fEvictSet.Bool(helpFlagName, false, "")
 	fEvictOwnerPassword = fEvictSet.String(ownerPasswordFlagName, "", "")
 	fEvictTPM           = fEvictSet.String(tpmFlagName, defaultTPMDevice, "")
+)
+
+// flush command flag set.
+var (
+	fFlushSet    = flag.NewFlagSet(flushCommand, flag.ExitOnError)
+	fFlushHandle handleFlag
+	fFlushHelp   = fFlushSet.Bool(helpFlagName, false, "")
+	fFlushTPM    = fFlushSet.String(tpmFlagName, defaultTPMDevice, "")
 )
 
 // makecred command flag set.
@@ -159,7 +195,9 @@ var (
 func init() {
 	fActivateSet.Var(&fActivateHandle, handleFlagName, "")
 	fActivateSet.Var(&fActivateProtector, protectorFlagName, "")
+	fCreatePrimarySet.Var(&fCreatePrimaryPersistent, persistentFlagName, "")
 	fEvictSet.Var(&fEvictHandle, handleFlagName, "")
+	fFlushSet.Var(&fFlushHandle, handleFlagName, "")
 	fMakeCredSet.Var(&fMakeCredHandle, handleFlagName, "")
 	fReadPublicSet.Var(&fReadPublicHandle, handleFlagName, "")
 
@@ -296,11 +334,13 @@ func usageMain() {
 	fmt.Printf("%s is a TPM2.0 command line client.\n", appName)
 	fmt.Println()
 
-	const fw = 13
+	const fw = 16
 	fmt.Println("Commands:")
 	fmt.Printf("    %-*s activate a credential\n", fw, activateCommand)
 	fmt.Printf("    %-*s output selected TPM capabilities\n", fw, capsCommand)
+	fmt.Printf("    %-*s create a primary object\n", fw, createPrimaryCommand)
 	fmt.Printf("    %-*s evict a persistent object\n", fw, evictCommand)
+	fmt.Printf("    %-*s flush a transient object\n", fw, flushCommand)
 	fmt.Printf("    %-*s show this usage information\n", fw, helpCommand)
 	fmt.Printf("    %-*s make an activation credential\n", fw, makeCredCommand)
 	fmt.Printf("    %-*s read a TPM object's public area\n", fw, readPublicCommand)
@@ -349,6 +389,25 @@ func usageCaps() {
 	fmt.Println()
 }
 
+// usageCreatePrimary outputs usage information for the createprimary command.
+func usageCreatePrimary() {
+	fmt.Printf("usage: %s %s [options]\n", appName, createPrimaryCommand)
+	fmt.Println()
+
+	fmt.Printf("The %s command creates a primary object.\n", createPrimaryCommand)
+	fmt.Println()
+
+	const fw = 29
+	fmt.Println("Options:")
+	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
+	fmt.Printf("    -%-*s owner password\n", fw, ownerPasswordFlagName+" <string>")
+	fmt.Printf("    -%-*s key password\n", fw, passwordFlagName+" <string>")
+	fmt.Printf("    -%-*s persistent object handle\n", fw, persistentFlagName+" <integer>")
+	fmt.Printf("    -%-*s template\n", fw, templateFlagName+" <path>")
+	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
+	fmt.Println()
+}
+
 // usageEvict outputs usage information for the evict command.
 func usageEvict() {
 	fmt.Printf("usage: %s %s [options]\n", appName, evictCommand)
@@ -362,6 +421,22 @@ func usageEvict() {
 	fmt.Printf("    -%-*s persistent object handle\n", fw, handleFlagName+" <integer>")
 	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
 	fmt.Printf("    -%-*s owner password\n", fw, ownerPasswordFlagName+" <string>")
+	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
+	fmt.Println()
+}
+
+// usageFlush outputs usage information for the flush command.
+func usageFlush() {
+	fmt.Printf("usage: %s %s [options]\n", appName, flushCommand)
+	fmt.Println()
+
+	fmt.Printf("The %s command flushes a transient object.\n", flushCommand)
+	fmt.Println()
+
+	const fw = 29
+	fmt.Println("Options:")
+	fmt.Printf("    -%-*s transient object handle\n", fw, handleFlagName+" <integer>")
+	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
 	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
 	fmt.Println()
 }
