@@ -30,7 +30,8 @@ func activateCred() {
 	defer t.Close()
 
 	cred, err = tpm2.ActivateCredential(t, tpmutil.Handle(fActivateHandle),
-		tpmutil.Handle(fActivateProtector), "", "", cred, secret)
+		tpmutil.Handle(fActivateProtector), *fActivatePassword,
+		*fActivateProtectorPassword, cred, secret)
 	if err != nil {
 		log.Fatalf("failed to activate credential: %v", err)
 	}

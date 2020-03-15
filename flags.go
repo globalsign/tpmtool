@@ -33,6 +33,7 @@ const (
 const (
 	activateCommand   = "activate"
 	capsCommand       = "caps"
+	evictCommand      = "evict"
 	helpCommand       = "help"
 	makeCredCommand   = "makecred"
 	readPublicCommand = "readpublic"
@@ -40,22 +41,25 @@ const (
 
 // Flag name constants.
 const (
-	algsFlagName       = "algorithms"
-	allFlagName        = "all"
-	credInFlagName     = "credin"
-	credOutFlagName    = "credout"
-	handleFlagName     = "handle"
-	handlesFlagName    = "handles"
-	helpFlagName       = "help"
-	inFlagName         = "in"
-	outFlagName        = "out"
-	protectorFlagName  = "protector"
-	publicAreaFlagName = "publicarea"
-	pubOutFlagName     = "pubout"
-	secretInFlagName   = "secretin"
-	secretOutFlagName  = "secretout"
-	textFlagName       = "text"
-	tpmFlagName        = "tpm"
+	algsFlagName              = "algorithms"
+	allFlagName               = "all"
+	credInFlagName            = "credin"
+	credOutFlagName           = "credout"
+	handleFlagName            = "handle"
+	handlesFlagName           = "handles"
+	helpFlagName              = "help"
+	inFlagName                = "in"
+	outFlagName               = "out"
+	ownerPasswordFlagName     = "ownerpass"
+	passwordFlagName          = "pass"
+	protectorFlagName         = "protector"
+	protectorPasswordFlagName = "protectorpass"
+	publicAreaFlagName        = "publicarea"
+	pubOutFlagName            = "pubout"
+	secretInFlagName          = "secretin"
+	secretOutFlagName         = "secretout"
+	textFlagName              = "text"
+	tpmFlagName               = "tpm"
 )
 
 // commands are the application commands.
@@ -77,6 +81,12 @@ var commands = []command{
 		usageFunc: usageCaps,
 	},
 	{
+		name:      evictCommand,
+		flagSet:   fEvictSet,
+		cmdFunc:   evictObject,
+		usageFunc: usageEvict,
+	},
+	{
 		name:      makeCredCommand,
 		flagSet:   fMakeCredSet,
 		cmdFunc:   makeCred,
@@ -92,13 +102,15 @@ var commands = []command{
 
 // activate command flag set.
 var (
-	fActivateSet       = flag.NewFlagSet(activateCommand, flag.ExitOnError)
-	fActivateCredIn    = fActivateSet.String(credInFlagName, "", "")
-	fActivateHandle    handleFlag
-	fActivateProtector handleFlag
-	fActivateHelp      = fActivateSet.Bool(helpFlagName, false, "")
-	fActivateSecretIn  = fActivateSet.String(secretInFlagName, "", "")
-	fActivateTPM       = fActivateSet.String(tpmFlagName, defaultTPMDevice, "")
+	fActivateSet               = flag.NewFlagSet(activateCommand, flag.ExitOnError)
+	fActivateCredIn            = fActivateSet.String(credInFlagName, "", "")
+	fActivateHandle            handleFlag
+	fActivatePassword          = fActivateSet.String(passwordFlagName, "", "")
+	fActivateProtector         handleFlag
+	fActivateProtectorPassword = fActivateSet.String(protectorPasswordFlagName, "", "")
+	fActivateHelp              = fActivateSet.Bool(helpFlagName, false, "")
+	fActivateSecretIn          = fActivateSet.String(secretInFlagName, "", "")
+	fActivateTPM               = fActivateSet.String(tpmFlagName, defaultTPMDevice, "")
 )
 
 // caps command flag set.
@@ -111,11 +123,20 @@ var (
 	fCapsTPM     = fCapsSet.String(tpmFlagName, defaultTPMDevice, "")
 )
 
+// evict command flag set.
+var (
+	fEvictSet           = flag.NewFlagSet(evictCommand, flag.ExitOnError)
+	fEvictHandle        handleFlag
+	fEvictHelp          = fEvictSet.Bool(helpFlagName, false, "")
+	fEvictOwnerPassword = fEvictSet.String(ownerPasswordFlagName, "", "")
+	fEvictTPM           = fEvictSet.String(tpmFlagName, defaultTPMDevice, "")
+)
+
 // makecred command flag set.
 var (
 	fMakeCredSet        = flag.NewFlagSet(makeCredCommand, flag.ExitOnError)
 	fMakeCredHandle     handleFlag
-	fMakeCredHelp       = fMakeCredSet.Bool(helpFlagName, false, "p")
+	fMakeCredHelp       = fMakeCredSet.Bool(helpFlagName, false, "")
 	fMakeCredIn         = fMakeCredSet.String(inFlagName, "", "")
 	fMakeCredCredOut    = fMakeCredSet.String(credOutFlagName, "", "")
 	fMakeCredPublicArea = fMakeCredSet.String(publicAreaFlagName, "", "")
@@ -127,7 +148,7 @@ var (
 var (
 	fReadPublicSet    = flag.NewFlagSet(readPublicCommand, flag.ExitOnError)
 	fReadPublicHandle handleFlag
-	fReadPublicHelp   = fReadPublicSet.Bool(helpFlagName, false, "p")
+	fReadPublicHelp   = fReadPublicSet.Bool(helpFlagName, false, "")
 	fReadPublicIn     = fReadPublicSet.String(inFlagName, "", "")
 	fReadPublicOut    = fReadPublicSet.String(outFlagName, "", "")
 	fReadPublicPubOut = fReadPublicSet.Bool(pubOutFlagName, false, "")
@@ -138,6 +159,7 @@ var (
 func init() {
 	fActivateSet.Var(&fActivateHandle, handleFlagName, "")
 	fActivateSet.Var(&fActivateProtector, protectorFlagName, "")
+	fEvictSet.Var(&fEvictHandle, handleFlagName, "")
 	fMakeCredSet.Var(&fMakeCredHandle, handleFlagName, "")
 	fReadPublicSet.Var(&fReadPublicHandle, handleFlagName, "")
 
@@ -278,6 +300,7 @@ func usageMain() {
 	fmt.Println("Commands:")
 	fmt.Printf("    %-*s activate a credential\n", fw, activateCommand)
 	fmt.Printf("    %-*s output selected TPM capabilities\n", fw, capsCommand)
+	fmt.Printf("    %-*s evict a persistent object\n", fw, evictCommand)
 	fmt.Printf("    %-*s show this usage information\n", fw, helpCommand)
 	fmt.Printf("    %-*s make an activation credential\n", fw, makeCredCommand)
 	fmt.Printf("    %-*s read a TPM object's public area\n", fw, readPublicCommand)
@@ -298,9 +321,11 @@ func usageActivate() {
 	const fw = 29
 	fmt.Println("Options:")
 	fmt.Printf("    -%-*s credential blob input file\n", fw, credInFlagName+" <path>")
-	fmt.Printf("    -%-*s persistent object handle of protecting key\n", fw, protectorFlagName+" <integer>")
 	fmt.Printf("    -%-*s persistent object handle of key\n", fw, handleFlagName+" <integer>")
 	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
+	fmt.Printf("    -%-*s key password\n", fw, passwordFlagName+" <string>")
+	fmt.Printf("    -%-*s persistent object handle of protecting key\n", fw, protectorFlagName+" <integer>")
+	fmt.Printf("    -%-*s protecting key password\n", fw, protectorPasswordFlagName+" <string>")
 	fmt.Printf("    -%-*s encrypted secret input file\n", fw, secretInFlagName+" <path>")
 	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
 	fmt.Println()
@@ -320,6 +345,23 @@ func usageCaps() {
 	fmt.Printf("    -%-*s output all capabilities\n", fw, allFlagName)
 	fmt.Printf("    -%-*s output active handles\n", fw, handlesFlagName)
 	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
+	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
+	fmt.Println()
+}
+
+// usageEvict outputs usage information for the evict command.
+func usageEvict() {
+	fmt.Printf("usage: %s %s [options]\n", appName, evictCommand)
+	fmt.Println()
+
+	fmt.Printf("The %s command evicts a persistent object.\n", evictCommand)
+	fmt.Println()
+
+	const fw = 29
+	fmt.Println("Options:")
+	fmt.Printf("    -%-*s persistent object handle\n", fw, handleFlagName+" <integer>")
+	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
+	fmt.Printf("    -%-*s owner password\n", fw, ownerPasswordFlagName+" <string>")
 	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
 	fmt.Println()
 }
