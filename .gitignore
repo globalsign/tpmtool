@@ -1,2 +1,5 @@
 # Executable files
 tpmtool
+
+# Temporary output files
+*.out
