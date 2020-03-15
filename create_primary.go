@@ -15,6 +15,7 @@ import (
 func createPrimary() {
 	ensureAllPassed(fCreatePrimarySet, templateFlagName, persistentFlagName)
 
+	// Read template.
 	data, err := ioutil.ReadFile(*fCreatePrimaryTemplate)
 	if err != nil {
 		log.Fatalf("failed to read template: %v", err)
@@ -25,24 +26,26 @@ func createPrimary() {
 		log.Fatalf("failed to unmarshal template: %v", err)
 	}
 
+	// Create primary object.
 	t := getTPM(*fCreatePrimaryTPM)
 	defer t.Close()
 
 	handle, _, err := tpm2.CreatePrimary(t, tpm2.HandleOwner, tpm2.PCRSelection{},
 		*fCreatePrimaryOwnerPassword, *fCreatePrimaryPassword, tmpl.ToPublic())
 	if err != nil {
-		log.Fatalf("failed to create primary key: %v", err)
+		log.Fatalf("failed to create primary object: %v", err)
 	}
 
+	// Make primary object persistent.
 	err = tpm2.EvictControl(t, *fCreatePrimaryOwnerPassword, tpm2.HandleOwner,
 		handle, tpmutil.Handle(fCreatePrimaryPersistent))
 	if err != nil {
 		tpm2.FlushContext(t, handle)
 
-		log.Fatalf("failed to evict object: %v", err)
+		log.Fatalf("failed to evict primary object: %v", err)
 	}
 
 	if err := tpm2.FlushContext(t, handle); err != nil {
-		log.Fatalf("failed to flush object: %v", err)
+		log.Fatalf("failed to flush primary object: %v", err)
 	}
 }

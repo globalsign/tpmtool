@@ -1,0 +1,22 @@
+{
+    "type": "TPM2_ALG_ECC",
+    "name_alg": "TPM2_ALG_SHA256",
+    "attributes": [
+        "TPMA_OBJECT_USERWITHAUTH",
+        "TPMA_OBJECT_SIGN_ENCRYPT",
+        "TPMA_OBJECT_FIXEDTPM",
+        "TPMA_OBJECT_FIXEDPARENT",
+        "TPMA_OBJECT_SENSITIVEDATAORIGIN"
+    ],
+    "ecc": {
+        "scheme": {
+            "algorithm": "TPM2_ALG_ECDSA",
+            "hash": "TPM2_ALG_SHA256"
+        },
+        "elliptic_curve": "TPM2_ECC_NIST_P256",
+        "point": {
+            "x": 81049655186412144683623317109467431159359919131768230367810828904622786313264,
+            "y": 47779070246474577266113409674204610378566198222422051975117195288116932407848
+        }
+    }
+}

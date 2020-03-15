@@ -33,6 +33,7 @@ const (
 const (
 	activateCommand      = "activate"
 	capsCommand          = "caps"
+	createCommand        = "create"
 	createPrimaryCommand = "createprimary"
 	evictCommand         = "evict"
 	flushCommand         = "flush"
@@ -54,8 +55,11 @@ const (
 	outFlagName               = "out"
 	ownerFlagName             = "owner"
 	ownerPasswordFlagName     = "ownerpass"
+	parentFlagName            = "parent"
+	parentPasswordFlagName    = "parentpass"
 	passwordFlagName          = "pass"
 	persistentFlagName        = "persistent"
+	privOutFlagName           = "privout"
 	protectorFlagName         = "protector"
 	protectorPasswordFlagName = "protectorpass"
 	publicAreaFlagName        = "publicarea"
@@ -84,6 +88,12 @@ var commands = []command{
 		flagSet:   fCapsSet,
 		cmdFunc:   outputCaps,
 		usageFunc: usageCaps,
+	},
+	{
+		name:      createCommand,
+		flagSet:   fCreateSet,
+		cmdFunc:   createObject,
+		usageFunc: usageCreate,
 	},
 	{
 		name:      createPrimaryCommand,
@@ -151,6 +161,21 @@ var (
 	fCreatePrimaryTPM           = fCreatePrimarySet.String(tpmFlagName, defaultTPMDevice, "")
 )
 
+// create command flag set.
+var (
+	fCreateSet            = flag.NewFlagSet(createCommand, flag.ExitOnError)
+	fCreatePersistent     handleFlag
+	fCreateHelp           = fCreateSet.Bool(helpFlagName, false, "")
+	fCreateOwnerPassword  = fCreateSet.String(ownerPasswordFlagName, "", "")
+	fCreateParent         handleFlag
+	fCreateParentPassword = fCreateSet.String(parentPasswordFlagName, "", "")
+	fCreatePassword       = fCreateSet.String(passwordFlagName, "", "")
+	fCreatePublicOut      = fCreateSet.String(pubOutFlagName, "", "")
+	fCreatePrivateOut     = fCreateSet.String(privOutFlagName, "", "")
+	fCreateTemplate       = fCreateSet.String(templateFlagName, "", "")
+	fCreateTPM            = fCreateSet.String(tpmFlagName, defaultTPMDevice, "")
+)
+
 // evict command flag set.
 var (
 	fEvictSet           = flag.NewFlagSet(evictCommand, flag.ExitOnError)
@@ -195,6 +220,8 @@ var (
 func init() {
 	fActivateSet.Var(&fActivateHandle, handleFlagName, "")
 	fActivateSet.Var(&fActivateProtector, protectorFlagName, "")
+	fCreateSet.Var(&fCreateParent, parentFlagName, "")
+	fCreateSet.Var(&fCreatePersistent, persistentFlagName, "")
 	fCreatePrimarySet.Var(&fCreatePrimaryPersistent, persistentFlagName, "")
 	fEvictSet.Var(&fEvictHandle, handleFlagName, "")
 	fFlushSet.Var(&fFlushHandle, handleFlagName, "")
@@ -318,6 +345,18 @@ func ensureAllPassed(set *flag.FlagSet, names ...string) {
 	}
 }
 
+// ensureAllOrNonePassed logs a failure message unless all or none of the named
+// flags were passed at the command line.
+func ensureAllOrNonePassed(set *flag.FlagSet, names ...string) {
+	if len(names) < 0 {
+		panic("at least two names must be passed to ensureAllOrNonePassed")
+	}
+
+	if c := countFlagsPassed(set, names...); c != 0 && c != len(names) {
+		log.Fatalf("all or none of %s must be provided", listifyFlagNames(names...))
+	}
+}
+
 // usageError outputs a brief usage message to standard error and exits with
 // status code 1.
 func usageError() {
@@ -338,6 +377,7 @@ func usageMain() {
 	fmt.Println("Commands:")
 	fmt.Printf("    %-*s activate a credential\n", fw, activateCommand)
 	fmt.Printf("    %-*s output selected TPM capabilities\n", fw, capsCommand)
+	fmt.Printf("    %-*s create an object\n", fw, createCommand)
 	fmt.Printf("    %-*s create a primary object\n", fw, createPrimaryCommand)
 	fmt.Printf("    %-*s evict a persistent object\n", fw, evictCommand)
 	fmt.Printf("    %-*s flush a transient object\n", fw, flushCommand)
@@ -389,6 +429,29 @@ func usageCaps() {
 	fmt.Println()
 }
 
+// usageCreate outputs usage information for the create command.
+func usageCreate() {
+	fmt.Printf("usage: %s %s [options]\n", appName, createCommand)
+	fmt.Println()
+
+	fmt.Printf("The %s command creates an object.\n", createCommand)
+	fmt.Println()
+
+	const fw = 29
+	fmt.Println("Options:")
+	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
+	fmt.Printf("    -%-*s owner password\n", fw, ownerPasswordFlagName+" <string>")
+	fmt.Printf("    -%-*s persistent handle of parent object\n", fw, parentFlagName+" <integer>")
+	fmt.Printf("    -%-*s parent password\n", fw, parentPasswordFlagName+" <string>")
+	fmt.Printf("    -%-*s object password\n", fw, passwordFlagName+" <string>")
+	fmt.Printf("    -%-*s persistent object handle\n", fw, persistentFlagName+" <integer>")
+	fmt.Printf("    -%-*s public area output file\n", fw, pubOutFlagName+" <path>")
+	fmt.Printf("    -%-*s private area output file\n", fw, privOutFlagName+" <path>")
+	fmt.Printf("    -%-*s template\n", fw, templateFlagName+" <path>")
+	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
+	fmt.Println()
+}
+
 // usageCreatePrimary outputs usage information for the createprimary command.
 func usageCreatePrimary() {
 	fmt.Printf("usage: %s %s [options]\n", appName, createPrimaryCommand)
@@ -401,7 +464,7 @@ func usageCreatePrimary() {
 	fmt.Println("Options:")
 	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
 	fmt.Printf("    -%-*s owner password\n", fw, ownerPasswordFlagName+" <string>")
-	fmt.Printf("    -%-*s key password\n", fw, passwordFlagName+" <string>")
+	fmt.Printf("    -%-*s object password\n", fw, passwordFlagName+" <string>")
 	fmt.Printf("    -%-*s persistent object handle\n", fw, persistentFlagName+" <integer>")
 	fmt.Printf("    -%-*s template\n", fw, templateFlagName+" <path>")
 	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)

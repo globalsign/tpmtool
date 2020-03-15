@@ -1,0 +1,16 @@
+{
+    "type": "TPM2_ALG_KEYEDHASH",
+    "name_alg": "TPM2_ALG_SHA256",
+    "attributes": [
+        "TPMA_OBJECT_USERWITHAUTH",
+        "TPMA_OBJECT_SIGN_ENCRYPT",
+        "TPMA_OBJECT_FIXEDTPM",
+        "TPMA_OBJECT_FIXEDPARENT",
+        "TPMA_OBJECT_SENSITIVEDATAORIGIN"
+    ],
+    "keyed_hash": {
+        "algorithm": "TPM2_ALG_HMAC",
+        "hash": "TPM2_ALG_SHA256",
+        "kdf": "TPM2_ALG_KDF1_SP800_108"
+    }
+}
