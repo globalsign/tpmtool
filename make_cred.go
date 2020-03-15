@@ -30,9 +30,19 @@ func makeCred() {
 		log.Fatalf("failed to compute name from public area: %v", err)
 	}
 
-	if name.Digest == nil {
-		log.Fatalf("failed to compute name digest from public area")
+	nameBytes, err := name.Encode()
+	if err != nil {
+		log.Fatalf("failed to encode name: %v", err)
 	}
+
+	// Per TPM Spec Part 1 section 11.4.9.2, contextU and contextV are passed
+	// to KDFa as sized buffers, but the size fields are not used in the
+	// computation. Accordingly, we strip the first two bytes (the size field)
+	// from the name bytes.
+	if len(nameBytes) < 2 {
+		log.Fatalf("size of name bytes is %d, expected at least 2", len(nameBytes))
+	}
+	nameBytes = nameBytes[2:]
 
 	// Read credential value to be encrypted.
 	var f *os.File
@@ -57,7 +67,7 @@ func makeCred() {
 	defer t.Close()
 
 	credBlob, secret, err := tpm2.MakeCredential(t,
-		tpmutil.Handle(fMakeCredHandle), cred, []byte(name.Digest.Value))
+		tpmutil.Handle(fMakeCredHandle), cred, nameBytes)
 	if err != nil {
 		log.Fatalf("failed to make credential: %v", err)
 	}

@@ -31,6 +31,7 @@ const (
 
 // Command name constants.
 const (
+	activateCommand   = "activate"
 	capsCommand       = "caps"
 	helpCommand       = "help"
 	makeCredCommand   = "makecred"
@@ -41,14 +42,17 @@ const (
 const (
 	algsFlagName       = "algorithms"
 	allFlagName        = "all"
+	credInFlagName     = "credin"
 	credOutFlagName    = "credout"
 	handleFlagName     = "handle"
 	handlesFlagName    = "handles"
 	helpFlagName       = "help"
 	inFlagName         = "in"
 	outFlagName        = "out"
+	protectorFlagName  = "protector"
 	publicAreaFlagName = "publicarea"
 	pubOutFlagName     = "pubout"
+	secretInFlagName   = "secretin"
 	secretOutFlagName  = "secretout"
 	textFlagName       = "text"
 	tpmFlagName        = "tpm"
@@ -59,6 +63,12 @@ var commands = []command{
 	{
 		name:    helpCommand,
 		cmdFunc: usageMain,
+	},
+	{
+		name:      activateCommand,
+		flagSet:   fActivateSet,
+		cmdFunc:   activateCred,
+		usageFunc: usageActivate,
 	},
 	{
 		name:      capsCommand,
@@ -79,6 +89,17 @@ var commands = []command{
 		usageFunc: usageReadPublic,
 	},
 }
+
+// activate command flag set.
+var (
+	fActivateSet       = flag.NewFlagSet(activateCommand, flag.ExitOnError)
+	fActivateCredIn    = fActivateSet.String(credInFlagName, "", "")
+	fActivateHandle    handleFlag
+	fActivateProtector handleFlag
+	fActivateHelp      = fActivateSet.Bool(helpFlagName, false, "")
+	fActivateSecretIn  = fActivateSet.String(secretInFlagName, "", "")
+	fActivateTPM       = fActivateSet.String(tpmFlagName, defaultTPMDevice, "")
+)
 
 // caps command flag set.
 var (
@@ -115,6 +136,8 @@ var (
 )
 
 func init() {
+	fActivateSet.Var(&fActivateHandle, handleFlagName, "")
+	fActivateSet.Var(&fActivateProtector, protectorFlagName, "")
 	fMakeCredSet.Var(&fMakeCredHandle, handleFlagName, "")
 	fReadPublicSet.Var(&fReadPublicHandle, handleFlagName, "")
 
@@ -253,12 +276,33 @@ func usageMain() {
 
 	const fw = 13
 	fmt.Println("Commands:")
+	fmt.Printf("    %-*s activate a credential\n", fw, activateCommand)
 	fmt.Printf("    %-*s output selected TPM capabilities\n", fw, capsCommand)
 	fmt.Printf("    %-*s show this usage information\n", fw, helpCommand)
+	fmt.Printf("    %-*s make an activation credential\n", fw, makeCredCommand)
 	fmt.Printf("    %-*s read a TPM object's public area\n", fw, readPublicCommand)
 	fmt.Println()
 
 	fmt.Printf("Use \"%s <command> -help\" for more information about a command.\n", appName)
+	fmt.Println()
+}
+
+// usageActivate outputs usage information for the activate command.
+func usageActivate() {
+	fmt.Printf("usage: %s %s [options]\n", appName, activateCommand)
+	fmt.Println()
+
+	fmt.Printf("The %s command activates a credential.\n", activateCommand)
+	fmt.Println()
+
+	const fw = 29
+	fmt.Println("Options:")
+	fmt.Printf("    -%-*s credential blob input file\n", fw, credInFlagName+" <path>")
+	fmt.Printf("    -%-*s persistent object handle of protecting key\n", fw, protectorFlagName+" <integer>")
+	fmt.Printf("    -%-*s persistent object handle of key\n", fw, handleFlagName+" <integer>")
+	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
+	fmt.Printf("    -%-*s encrypted secret input file\n", fw, secretInFlagName+" <path>")
+	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
 	fmt.Println()
 }
 
