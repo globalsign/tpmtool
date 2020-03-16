@@ -1,8 +1,8 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 
 	"github.com/google/go-tpm/tpm2"
@@ -10,32 +10,40 @@ import (
 )
 
 // activateCred activates a credential.
-func activateCred() {
-	ensureAllPassed(fActivateSet, credInFlagName, secretInFlagName,
+func activateCred() error {
+	err := ensureAllPassed(fActivateSet, credInFlagName, secretInFlagName,
 		handleFlagName, protectorFlagName)
+	if err != nil {
+		return err
+	}
 
 	// Read the credential blob and encrypted secret.
 	cred, err := ioutil.ReadFile(*fActivateCredIn)
 	if err != nil {
-		log.Fatalf("failed to read credential blob: %v", err)
+		return fmt.Errorf("failed to read credential blob: %v", err)
 	}
 
 	secret, err := ioutil.ReadFile(*fActivateSecretIn)
 	if err != nil {
-		log.Fatalf("failed to read encrypted secret: %v", err)
+		return fmt.Errorf("failed to read encrypted secret: %v", err)
 	}
 
 	// Activate the credential.
-	t := getTPM(*fActivateTPM)
+	t, err := getTPM(*fActivateTPM)
+	if err != nil {
+		return err
+	}
 	defer t.Close()
 
 	cred, err = tpm2.ActivateCredential(t, tpmutil.Handle(fActivateHandle),
 		tpmutil.Handle(fActivateProtector), *fActivatePassword,
 		*fActivateProtectorPassword, cred, secret)
 	if err != nil {
-		log.Fatalf("failed to activate credential: %v", err)
+		return fmt.Errorf("failed to activate credential: %v", err)
 	}
 
 	// Output the credential.
 	os.Stdout.Write(cred)
+
+	return nil
 }

@@ -1,23 +1,31 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/google/go-tpm/tpm2"
 	"github.com/google/go-tpm/tpmutil"
 )
 
 // evictObject evicts an object from persistent storage.
-func evictObject() {
-	ensureAllPassed(fEvictSet, handleFlagName)
+func evictObject() error {
+	err := ensureAllPassed(fEvictSet, handleFlagName)
+	if err != nil {
+		return err
+	}
 
-	t := getTPM(*fEvictTPM)
+	t, err := getTPM(*fEvictTPM)
+	if err != nil {
+		return err
+	}
 	defer t.Close()
 
 	handle := tpmutil.Handle(fEvictHandle)
 
-	err := tpm2.EvictControl(t, *fEvictOwnerPassword, tpm2.HandleOwner, handle, handle)
+	err = tpm2.EvictControl(t, *fEvictOwnerPassword, tpm2.HandleOwner, handle, handle)
 	if err != nil {
-		log.Fatalf("failed to evict object: %v", err)
+		return fmt.Errorf("failed to evict object: %v", err)
 	}
+
+	return nil
 }

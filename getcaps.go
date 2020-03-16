@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"strings"
 
 	"github.com/google/go-tpm/tpm2"
@@ -17,28 +16,35 @@ const (
 )
 
 // outputCaps outputs selected TPM capabilities.
-func outputCaps() {
-	t := getTPM(*fCapsTPM)
+func outputCaps() error {
+	t, err := getTPM(*fCapsTPM)
+	if err != nil {
+		return err
+	}
 	defer t.Close()
 
 	for _, c := range []struct {
 		process bool
 		id      pgtpm.Capability
-		cmdFunc func(io.ReadWriteCloser)
+		cmdFunc func(io.ReadWriteCloser) error
 	}{
 		{*fCapsAlgs, pgtpm.TPM2_CAP_ALGS, outputCapsAlgorithms},
 		{*fCapsHandles, pgtpm.TPM2_CAP_HANDLES, outputCapsHandles},
 	} {
 		if c.process || *fCapsAll {
 			fmt.Printf("%s:\n", c.id.String())
-			c.cmdFunc(t)
+			if err := c.cmdFunc(t); err != nil {
+				return err
+			}
 			fmt.Println()
 		}
 	}
+
+	return nil
 }
 
 // outputCapsAlgorithms outputs the algorithms supported by the TPM.
-func outputCapsAlgorithms(t io.ReadWriteCloser) {
+func outputCapsAlgorithms(t io.ReadWriteCloser) error {
 	var vals []interface{}
 	var more = true
 	var err error
@@ -47,7 +53,7 @@ func outputCapsAlgorithms(t io.ReadWriteCloser) {
 	for more {
 		vals, more, err = tpm2.GetCapability(t, tpm2.CapabilityAlgs, capRequestSize, next)
 		if err != nil {
-			log.Fatalf("failed to get algorithms: %v", err)
+			return fmt.Errorf("failed to get algorithms: %v", err)
 		}
 
 		for _, val := range vals {
@@ -72,10 +78,12 @@ func outputCapsAlgorithms(t io.ReadWriteCloser) {
 			fmt.Printf("  %-*s %s\n", 24, pgtpm.Algorithm(ad.ID).String(), strings.Join(props, " | "))
 		}
 	}
+
+	return nil
 }
 
 // outputCapsHandles outputs the handles currently active in the TPM.
-func outputCapsHandles(t io.ReadWriteCloser) {
+func outputCapsHandles(t io.ReadWriteCloser) error {
 	for _, ht := range []pgtpm.HandleType{
 		pgtpm.TPM2_HT_PCR,
 		pgtpm.TPM2_HT_NV_INDEX,
@@ -93,7 +101,7 @@ func outputCapsHandles(t io.ReadWriteCloser) {
 		for more {
 			vals, more, err = tpm2.GetCapability(t, tpm2.CapabilityHandles, capRequestSize, next)
 			if err != nil {
-				log.Fatalf("failed to get handles: %v", err)
+				return fmt.Errorf("failed to get handles: %v", err)
 			}
 
 			for _, val := range vals {
@@ -102,4 +110,6 @@ func outputCapsHandles(t io.ReadWriteCloser) {
 			}
 		}
 	}
+
+	return nil
 }

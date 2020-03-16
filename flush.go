@@ -1,23 +1,31 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/google/go-tpm/tpm2"
 	"github.com/google/go-tpm/tpmutil"
 )
 
 // flushContext flushes a transient object from the TPM.
-func flushContext() {
-	ensureAllPassed(fFlushSet, handleFlagName)
+func flushContext() error {
+	err := ensureAllPassed(fFlushSet, handleFlagName)
+	if err != nil {
+		return err
+	}
 
-	t := getTPM(*fFlushTPM)
+	t, err := getTPM(*fFlushTPM)
+	if err != nil {
+		return err
+	}
 	defer t.Close()
 
 	handle := tpmutil.Handle(fFlushHandle)
 
-	err := tpm2.FlushContext(t, handle)
+	err = tpm2.FlushContext(t, handle)
 	if err != nil {
-		log.Fatalf("failed to flush object: %v", err)
+		return fmt.Errorf("failed to flush object: %v", err)
 	}
+
+	return nil
 }

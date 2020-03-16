@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,22 +14,28 @@ import (
 )
 
 // createObject creates an object.
-func createObject() {
-	ensureAllPassed(fCreateSet, templateFlagName, parentFlagName)
+func createObject() (err error) {
+	err = ensureAllPassed(fCreateSet, templateFlagName, parentFlagName)
+	if err != nil {
+		return err
+	}
 
 	// Read template.
 	data, err := ioutil.ReadFile(*fCreateTemplate)
 	if err != nil {
-		log.Fatalf("failed to read template: %v", err)
+		return fmt.Errorf("failed to read template: %v", err)
 	}
 
 	var tmpl pgtpm.PublicTemplate
 	if err := json.Unmarshal(data, &tmpl); err != nil {
-		log.Fatalf("failed to unmarshal template: %v", err)
+		return fmt.Errorf("failed to unmarshal template: %v", err)
 	}
 
 	// Create object.
-	t := getTPM(*fCreateTPM)
+	t, err := getTPM(*fCreateTPM)
+	if err != nil {
+		return err
+	}
 	defer t.Close()
 
 	parentHandle := tpmutil.Handle(fCreateParent)
@@ -36,26 +43,29 @@ func createObject() {
 	private, public, _, _, _, err := tpm2.CreateKey(t, parentHandle, tpm2.PCRSelection{},
 		*fCreateParentPassword, *fCreatePassword, tmpl.ToPublic())
 	if err != nil {
-		log.Fatalf("failed to create object: %v", err)
+		return fmt.Errorf("failed to create object: %v", err)
 	}
 
 	// Make object persistent, if requested.
 	if fCreatePersistent != 0 {
 		handle, _, err := tpm2.Load(t, parentHandle, *fCreateParentPassword, public, private)
 		if err != nil {
-			log.Fatalf("failed to load object: %v", err)
+			return fmt.Errorf("failed to load object: %v", err)
 		}
+		defer func() {
+			if ferr := tpm2.FlushContext(t, handle); ferr != nil {
+				if err == nil {
+					err = fmt.Errorf("failed to flush object: %v", ferr)
+				} else {
+					log.Printf("failed to flush object: %v", ferr)
+				}
+			}
+		}()
 
 		err = tpm2.EvictControl(t, *fCreateOwnerPassword, tpm2.HandleOwner,
 			handle, tpmutil.Handle(fCreatePersistent))
 		if err != nil {
-			tpm2.FlushContext(t, handle)
-
-			log.Fatalf("failed to evict object: %v", err)
-		}
-
-		if err := tpm2.FlushContext(t, handle); err != nil {
-			log.Fatalf("failed to flush object: %v", err)
+			return fmt.Errorf("failed to evict object: %v", err)
 		}
 	}
 
@@ -63,12 +73,12 @@ func createObject() {
 	if *fCreatePublicOut != "" {
 		f, err := os.Create(*fCreatePublicOut)
 		if err != nil {
-			log.Fatalf("failed to create public area file: %v", err)
+			return fmt.Errorf("failed to create public area file: %v", err)
 		}
 		defer f.Close()
 
 		if _, err := f.Write(public); err != nil {
-			log.Fatalf("failed to write public area: %v", err)
+			return fmt.Errorf("failed to write public area: %v", err)
 		}
 	}
 
@@ -76,12 +86,14 @@ func createObject() {
 	if *fCreatePrivateOut != "" {
 		f, err := os.Create(*fCreatePrivateOut)
 		if err != nil {
-			log.Fatalf("failed to create private area file: %v", err)
+			return fmt.Errorf("failed to create private area file: %v", err)
 		}
 		defer f.Close()
 
 		if _, err := f.Write(private); err != nil {
-			log.Fatalf("failed to write private area: %v", err)
+			return fmt.Errorf("failed to write private area: %v", err)
 		}
 	}
+
+	return nil
 }

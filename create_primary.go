@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -12,40 +13,51 @@ import (
 )
 
 // createPrimary creates a primary object.
-func createPrimary() {
-	ensureAllPassed(fCreatePrimarySet, templateFlagName, persistentFlagName)
+func createPrimary() (err error) {
+	err = ensureAllPassed(fCreatePrimarySet, templateFlagName, persistentFlagName)
+	if err != nil {
+		return err
+	}
 
 	// Read template.
 	data, err := ioutil.ReadFile(*fCreatePrimaryTemplate)
 	if err != nil {
-		log.Fatalf("failed to read template: %v", err)
+		return fmt.Errorf("failed to read template: %v", err)
 	}
 
 	var tmpl pgtpm.PublicTemplate
 	if err := json.Unmarshal(data, &tmpl); err != nil {
-		log.Fatalf("failed to unmarshal template: %v", err)
+		return fmt.Errorf("failed to unmarshal template: %v", err)
 	}
 
 	// Create primary object.
-	t := getTPM(*fCreatePrimaryTPM)
+	t, err := getTPM(*fCreatePrimaryTPM)
+	if err != nil {
+		return err
+	}
 	defer t.Close()
 
 	handle, _, err := tpm2.CreatePrimary(t, tpm2.HandleOwner, tpm2.PCRSelection{},
 		*fCreatePrimaryOwnerPassword, *fCreatePrimaryPassword, tmpl.ToPublic())
 	if err != nil {
-		log.Fatalf("failed to create primary object: %v", err)
+		return fmt.Errorf("failed to create primary object: %v", err)
 	}
+	defer func() {
+		if ferr := tpm2.FlushContext(t, handle); ferr != nil {
+			if err == nil {
+				err = fmt.Errorf("failed to flush primary object: %v", ferr)
+			} else {
+				log.Printf("failed to flush primary object: %v", ferr)
+			}
+		}
+	}()
 
 	// Make primary object persistent.
 	err = tpm2.EvictControl(t, *fCreatePrimaryOwnerPassword, tpm2.HandleOwner,
 		handle, tpmutil.Handle(fCreatePrimaryPersistent))
 	if err != nil {
-		tpm2.FlushContext(t, handle)
-
-		log.Fatalf("failed to evict primary object: %v", err)
+		return fmt.Errorf("failed to evict primary object: %v", err)
 	}
 
-	if err := tpm2.FlushContext(t, handle); err != nil {
-		log.Fatalf("failed to flush primary object: %v", err)
-	}
+	return nil
 }

@@ -23,7 +23,9 @@ func main() {
 			if isFlagPassed(cmd.flagSet, "help") {
 				cmd.usageFunc()
 			} else {
-				cmd.cmdFunc()
+				if err := cmd.cmdFunc(); err != nil {
+					log.Fatalf("%v", err)
+				}
 			}
 
 			return

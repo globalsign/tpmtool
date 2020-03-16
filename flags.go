@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -16,7 +15,7 @@ import (
 type command struct {
 	name      string
 	flagSet   *flag.FlagSet
-	cmdFunc   func()
+	cmdFunc   func() error
 	usageFunc func()
 }
 
@@ -315,46 +314,52 @@ func listifyFlagNames(names ...string) string {
 
 // ensureExactlyOnePassed logs a failure message unless exactly one of the
 // named flags was passed at the command line.
-func ensureExactlyOnePassed(set *flag.FlagSet, names ...string) {
+func ensureExactlyOnePassed(set *flag.FlagSet, names ...string) error {
 	if len(names) == 0 {
 		panic("at least one name must be passed to ensureExactlyOneOf")
 	}
 
 	if countFlagsPassed(set, names...) != 1 {
 		if len(names) == 1 {
-			log.Fatalf("-%s must be provided", names[0])
-		} else {
-			log.Fatalf("exactly one of %s must be provided", listifyFlagNames(names...))
+			return fmt.Errorf("-%s must be provided", names[0])
 		}
+
+		return fmt.Errorf("exactly one of %s must be provided", listifyFlagNames(names...))
 	}
+
+	return nil
 }
 
 // ensureAllPassed logs a failure message unless all of the named flags were
 // passed at the command line.
-func ensureAllPassed(set *flag.FlagSet, names ...string) {
+func ensureAllPassed(set *flag.FlagSet, names ...string) error {
 	if len(names) == 0 {
 		panic("at least one name must be passed to ensureAllPassed")
 	}
 
 	if countFlagsPassed(set, names...) != len(names) {
 		if len(names) == 1 {
-			log.Fatalf("-%s must be provided", names[0])
-		} else {
-			log.Fatalf("%s must all be provided", listifyFlagNames(names...))
+			return fmt.Errorf("-%s must be provided", names[0])
 		}
+
+		return fmt.Errorf("%s must all be provided", listifyFlagNames(names...))
 	}
+
+	return nil
 }
 
 // ensureAllOrNonePassed logs a failure message unless all or none of the named
 // flags were passed at the command line.
-func ensureAllOrNonePassed(set *flag.FlagSet, names ...string) {
+func ensureAllOrNonePassed(set *flag.FlagSet, names ...string) error {
 	if len(names) < 0 {
 		panic("at least two names must be passed to ensureAllOrNonePassed")
 	}
 
 	if c := countFlagsPassed(set, names...); c != 0 && c != len(names) {
-		log.Fatalf("all or none of %s must be provided", listifyFlagNames(names...))
+		return fmt.Errorf("all or none of %s must be provided", listifyFlagNames(names...))
 	}
+
+	return nil
 }
 
 // usageError outputs a brief usage message to standard error and exits with
@@ -366,7 +371,7 @@ func usageError() {
 }
 
 // usageMain outputs a full usage message for the application.
-func usageMain() {
+func usageMain() error {
 	fmt.Printf("usage: %s <command> [options]\n", appName)
 	fmt.Println()
 
@@ -388,6 +393,8 @@ func usageMain() {
 
 	fmt.Printf("Use \"%s <command> -help\" for more information about a command.\n", appName)
 	fmt.Println()
+
+	return nil
 }
 
 // usageActivate outputs usage information for the activate command.

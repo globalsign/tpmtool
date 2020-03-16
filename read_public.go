@@ -6,7 +6,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 
 	"github.com/google/go-tpm/tpm2"
@@ -16,30 +15,31 @@ import (
 )
 
 // readPublic reads a TPM object's public area.
-func readPublic() {
+func readPublic() error {
 	var pub tpm2.Public
 	var nameAlg pgtpm.Algorithm
 	var qnameAlg pgtpm.Algorithm
 	var nameHash []byte
 	var qnameHash []byte
 
-	ensureExactlyOnePassed(fReadPublicSet, inFlagName, handleFlagName)
+	err := ensureExactlyOnePassed(fReadPublicSet, inFlagName, handleFlagName)
+	if err != nil {
+		return err
+	}
 
 	// Read a public area from a file, or from a TPM.
 	if *fReadPublicIn == "" {
-		if fReadPublicHandle == 0 {
-			log.Fatalf("no handle specified")
-		}
-
 		var handle = pgtpm.Handle(fReadPublicHandle)
 
-		t := getTPM(*fReadPublicTPM)
+		t, err := getTPM(*fReadPublicTPM)
+		if err != nil {
+			return err
+		}
 		defer t.Close()
 
-		var err error
 		pub, nameHash, qnameHash, err = tpm2.ReadPublic(t, tpmutil.Handle(handle))
 		if err != nil {
-			log.Fatalf("failed to read public area: %v", err)
+			return fmt.Errorf("failed to read public area: %v", err)
 		}
 
 		nameAlg = pgtpm.Algorithm(binary.BigEndian.Uint16(nameHash))
@@ -50,17 +50,17 @@ func readPublic() {
 	} else {
 		data, err := ioutil.ReadFile(*fReadPublicIn)
 		if err != nil {
-			log.Fatalf("failed to read public area: %v", err)
+			return fmt.Errorf("failed to read public area: %v", err)
 		}
 
 		pub, err = tpm2.DecodePublic(data)
 		if err != nil {
-			log.Fatalf("failed to decode public area: %v", err)
+			return fmt.Errorf("failed to decode public area: %v", err)
 		}
 
 		name, err := pub.Name()
 		if err != nil {
-			log.Fatalf("failed to get name from public area: %v", err)
+			return fmt.Errorf("failed to get name from public area: %v", err)
 		}
 
 		if name.Digest != nil {
@@ -77,7 +77,7 @@ func readPublic() {
 		if *fReadPublicOut != "" {
 			f, err = os.Create(*fReadPublicOut)
 			if err != nil {
-				log.Fatalf("failed to create output file: %v", err)
+				return fmt.Errorf("failed to create output file: %v", err)
 			}
 			defer f.Close()
 		} else {
@@ -86,12 +86,12 @@ func readPublic() {
 
 		data, err := pub.Encode()
 		if err != nil {
-			log.Fatalf("failed to encode public area: %v", err)
+			return fmt.Errorf("failed to encode public area: %v", err)
 		}
 
 		_, err = f.Write(data)
 		if err != nil {
-			log.Fatalf("failed to write public area: %v", err)
+			return fmt.Errorf("failed to write public area: %v", err)
 		}
 	}
 
@@ -221,12 +221,12 @@ func readPublic() {
 	if *fReadPublicPubOut {
 		key, err := pub.Key()
 		if err != nil {
-			log.Fatalf("failed to get public key from public area: %v", err)
+			return fmt.Errorf("failed to get public key from public area: %v", err)
 		}
 
 		der, err := x509.MarshalPKIXPublicKey(key)
 		if err != nil {
-			log.Fatalf("failed to marshal public key: %v", err)
+			return fmt.Errorf("failed to marshal public key: %v", err)
 		}
 
 		fmt.Printf("%s", pem.EncodeToMemory(&pem.Block{
@@ -234,4 +234,6 @@ func readPublic() {
 			Bytes: der,
 		}))
 	}
+
+	return nil
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -15,24 +15,24 @@ import (
 // cannot be found, and the name is in the form hostname:port, an attempt will
 // be made to open a connection with a Microsoft TPM 2.0 Simulator listening on
 // that port.
-func getTPM(name string) io.ReadWriteCloser {
+func getTPM(name string) (io.ReadWriteCloser, error) {
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) && len(strings.Split(name, ":")) == 2 {
 			s, err := pgtpm.NewMSSimulator(name)
 			if err != nil {
-				log.Fatalf("failed to initialize MS TPM simulator: %v", err)
+				return nil, fmt.Errorf("failed to initialize MS TPM simulator: %v", err)
 			}
 
-			return s
+			return s, nil
 		}
 
-		log.Fatalf("failed to locate TPM device: %v", err)
+		return nil, fmt.Errorf("failed to locate TPM device: %v", err)
 	}
 
 	t, err := tpm2.OpenTPM(name)
 	if err != nil {
-		log.Fatalf("failed to open TPM device: %v", err)
+		return nil, fmt.Errorf("failed to open TPM device: %v", err)
 	}
 
-	return t
+	return t, nil
 }
