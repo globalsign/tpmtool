@@ -37,7 +37,14 @@ func createPrimary() (err error) {
 	}
 	defer t.Close()
 
-	handle, _, err := tpm2.CreatePrimary(t, tpm2.HandleOwner, tpm2.PCRSelection{},
+	owner := tpm2.HandleOwner
+	if *fCreatePrimaryEndorsement {
+		owner = tpm2.HandleEndorsement
+	} else if *fCreatePrimaryPlatform {
+		owner = tpm2.HandlePlatform
+	}
+
+	handle, _, err := tpm2.CreatePrimary(t, owner, tpm2.PCRSelection{},
 		*fCreatePrimaryOwnerPassword, *fCreatePrimaryPassword, tmpl.ToPublic())
 	if err != nil {
 		return fmt.Errorf("failed to create primary object: %v", err)

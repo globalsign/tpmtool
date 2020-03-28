@@ -47,6 +47,7 @@ const (
 	allFlagName               = "all"
 	credInFlagName            = "credin"
 	credOutFlagName           = "credout"
+	endorsementFlagName       = "endorsement"
 	handleFlagName            = "handle"
 	handlesFlagName           = "handles"
 	helpFlagName              = "help"
@@ -58,6 +59,7 @@ const (
 	parentPasswordFlagName    = "parentpass"
 	passwordFlagName          = "pass"
 	persistentFlagName        = "persistent"
+	platformFlagName          = "platform"
 	privOutFlagName           = "privout"
 	protectorFlagName         = "protector"
 	protectorPasswordFlagName = "protectorpass"
@@ -152,10 +154,12 @@ var (
 // createprimary command flag set.
 var (
 	fCreatePrimarySet           = flag.NewFlagSet(createPrimaryCommand, flag.ExitOnError)
-	fCreatePrimaryPersistent    handleFlag
+	fCreatePrimaryEndorsement   = fCreatePrimarySet.Bool(endorsementFlagName, false, "")
 	fCreatePrimaryHelp          = fCreatePrimarySet.Bool(helpFlagName, false, "")
 	fCreatePrimaryOwnerPassword = fCreatePrimarySet.String(ownerPasswordFlagName, "", "")
 	fCreatePrimaryPassword      = fCreatePrimarySet.String(passwordFlagName, "", "")
+	fCreatePrimaryPersistent    handleFlag
+	fCreatePrimaryPlatform      = fCreatePrimarySet.Bool(platformFlagName, false, "")
 	fCreatePrimaryTemplate      = fCreatePrimarySet.String(templateFlagName, "", "")
 	fCreatePrimaryTPM           = fCreatePrimarySet.String(tpmFlagName, defaultTPMDevice, "")
 )
@@ -163,14 +167,14 @@ var (
 // create command flag set.
 var (
 	fCreateSet            = flag.NewFlagSet(createCommand, flag.ExitOnError)
-	fCreatePersistent     handleFlag
 	fCreateHelp           = fCreateSet.Bool(helpFlagName, false, "")
 	fCreateOwnerPassword  = fCreateSet.String(ownerPasswordFlagName, "", "")
 	fCreateParent         handleFlag
 	fCreateParentPassword = fCreateSet.String(parentPasswordFlagName, "", "")
 	fCreatePassword       = fCreateSet.String(passwordFlagName, "", "")
-	fCreatePublicOut      = fCreateSet.String(pubOutFlagName, "", "")
+	fCreatePersistent     handleFlag
 	fCreatePrivateOut     = fCreateSet.String(privOutFlagName, "", "")
+	fCreatePublicOut      = fCreateSet.String(pubOutFlagName, "", "")
 	fCreateTemplate       = fCreateSet.String(templateFlagName, "", "")
 	fCreateTPM            = fCreateSet.String(tpmFlagName, defaultTPMDevice, "")
 )
@@ -469,10 +473,12 @@ func usageCreatePrimary() {
 
 	const fw = 29
 	fmt.Println("Options:")
+	fmt.Printf("    -%-*s create in endorsement hierarchy\n", fw, endorsementFlagName)
 	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
 	fmt.Printf("    -%-*s owner password\n", fw, ownerPasswordFlagName+" <string>")
 	fmt.Printf("    -%-*s object password\n", fw, passwordFlagName+" <string>")
 	fmt.Printf("    -%-*s persistent object handle\n", fw, persistentFlagName+" <integer>")
+	fmt.Printf("    -%-*s create in platform hierarchy\n", fw, platformFlagName)
 	fmt.Printf("    -%-*s template\n", fw, templateFlagName+" <path>")
 	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
 	fmt.Println()
