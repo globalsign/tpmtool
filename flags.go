@@ -24,8 +24,14 @@ type handleFlag pgtpm.Handle
 
 // Global constants.
 const (
-	appName          = "tpmtool"
-	defaultTPMDevice = "/dev/tpmrm0"
+	appName                = "tpmtool"
+	defaultTPMDeviceGlobal = "/dev/tpmrm0"
+	defaultTPMEnv          = "TPMTOOL_DEFAULT_TPM"
+)
+
+// Global variables
+var (
+	defaultTPMDevice = defaultTPMDeviceGlobal
 )
 
 // Command name constants.
@@ -138,7 +144,7 @@ var (
 	fActivateProtectorPassword = fActivateSet.String(protectorPasswordFlagName, "", "")
 	fActivateHelp              = fActivateSet.Bool(helpFlagName, false, "")
 	fActivateSecretIn          = fActivateSet.String(secretInFlagName, "", "")
-	fActivateTPM               = fActivateSet.String(tpmFlagName, defaultTPMDevice, "")
+	fActivateTPM               = fActivateSet.String(tpmFlagName, "", "")
 )
 
 // caps command flag set.
@@ -148,7 +154,7 @@ var (
 	fCapsAll     = fCapsSet.Bool(allFlagName, false, "")
 	fCapsHandles = fCapsSet.Bool(handlesFlagName, false, "")
 	fCapsHelp    = fCapsSet.Bool(helpFlagName, false, "")
-	fCapsTPM     = fCapsSet.String(tpmFlagName, defaultTPMDevice, "")
+	fCapsTPM     = fCapsSet.String(tpmFlagName, "", "")
 )
 
 // createprimary command flag set.
@@ -161,7 +167,7 @@ var (
 	fCreatePrimaryPersistent    handleFlag
 	fCreatePrimaryPlatform      = fCreatePrimarySet.Bool(platformFlagName, false, "")
 	fCreatePrimaryTemplate      = fCreatePrimarySet.String(templateFlagName, "", "")
-	fCreatePrimaryTPM           = fCreatePrimarySet.String(tpmFlagName, defaultTPMDevice, "")
+	fCreatePrimaryTPM           = fCreatePrimarySet.String(tpmFlagName, "", "")
 )
 
 // create command flag set.
@@ -176,7 +182,7 @@ var (
 	fCreatePrivateOut     = fCreateSet.String(privOutFlagName, "", "")
 	fCreatePublicOut      = fCreateSet.String(pubOutFlagName, "", "")
 	fCreateTemplate       = fCreateSet.String(templateFlagName, "", "")
-	fCreateTPM            = fCreateSet.String(tpmFlagName, defaultTPMDevice, "")
+	fCreateTPM            = fCreateSet.String(tpmFlagName, "", "")
 )
 
 // evict command flag set.
@@ -185,7 +191,7 @@ var (
 	fEvictHandle        handleFlag
 	fEvictHelp          = fEvictSet.Bool(helpFlagName, false, "")
 	fEvictOwnerPassword = fEvictSet.String(ownerPasswordFlagName, "", "")
-	fEvictTPM           = fEvictSet.String(tpmFlagName, defaultTPMDevice, "")
+	fEvictTPM           = fEvictSet.String(tpmFlagName, "", "")
 )
 
 // flush command flag set.
@@ -193,7 +199,7 @@ var (
 	fFlushSet    = flag.NewFlagSet(flushCommand, flag.ExitOnError)
 	fFlushHandle handleFlag
 	fFlushHelp   = fFlushSet.Bool(helpFlagName, false, "")
-	fFlushTPM    = fFlushSet.String(tpmFlagName, defaultTPMDevice, "")
+	fFlushTPM    = fFlushSet.String(tpmFlagName, "", "")
 )
 
 // makecred command flag set.
@@ -205,7 +211,7 @@ var (
 	fMakeCredCredOut    = fMakeCredSet.String(credOutFlagName, "", "")
 	fMakeCredPublicArea = fMakeCredSet.String(publicAreaFlagName, "", "")
 	fMakeCredSecretOut  = fMakeCredSet.String(secretOutFlagName, "", "")
-	fMakeCredTPM        = fMakeCredSet.String(tpmFlagName, defaultTPMDevice, "")
+	fMakeCredTPM        = fMakeCredSet.String(tpmFlagName, "", "")
 )
 
 // readpublic command flag set.
@@ -217,7 +223,7 @@ var (
 	fReadPublicOut    = fReadPublicSet.String(outFlagName, "", "")
 	fReadPublicPubOut = fReadPublicSet.Bool(pubOutFlagName, false, "")
 	fReadPublicText   = fReadPublicSet.Bool(textFlagName, false, "")
-	fReadPublicTPM    = fReadPublicSet.String(tpmFlagName, defaultTPMDevice, "")
+	fReadPublicTPM    = fReadPublicSet.String(tpmFlagName, "", "")
 )
 
 func init() {
@@ -235,6 +241,10 @@ func init() {
 		if cmd.flagSet != nil {
 			cmd.flagSet.Usage = cmd.usageFunc
 		}
+	}
+
+	if v := os.Getenv(defaultTPMEnv); v != "" {
+		defaultTPMDevice = v
 	}
 }
 
@@ -396,6 +406,11 @@ func usageMain() error {
 	fmt.Println()
 
 	fmt.Printf("Use \"%s <command> -help\" for more information about a command.\n", appName)
+	fmt.Println()
+
+	fmt.Printf("For commands which access the TPM, if the -%s option is not provided, the value\n", tpmFlagName)
+	fmt.Printf("of the %s environment variable will be used, if set. Otherwise,\n", defaultTPMEnv)
+	fmt.Printf("the global default of %s will be used.\n", defaultTPMDeviceGlobal)
 	fmt.Println()
 
 	return nil

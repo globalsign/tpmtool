@@ -16,6 +16,10 @@ import (
 // be made to open a connection with a Microsoft TPM 2.0 Simulator listening on
 // that port.
 func getTPM(name string) (io.ReadWriteCloser, error) {
+	if name == "" {
+		name = defaultTPMDevice
+	}
+
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) && len(strings.Split(name, ":")) == 2 {
 			s, err := pgtpm.NewMSSimulator(name)
