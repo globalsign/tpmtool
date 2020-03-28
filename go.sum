@@ -20,6 +20,9 @@ github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrk
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/paulgriffiths/pgtpm v0.0.0-20200315171307-812eecd04b4a h1:DVj13VRopj2Xx2p8AsaHNZhRdE3tEObY9cTdVf5ii1w=
 github.com/paulgriffiths/pgtpm v0.0.0-20200315171307-812eecd04b4a/go.mod h1:LP9YCMB7m2aAhNSJ0ks69WcqdN8NVyGZZSrs/g0T/Bo=
+github.com/paulgriffiths/pgtpm v0.0.0-20200328161400-3ae0111bcbd6 h1:AiTfzDSrDWm9CaLmNsBIiZZRydtru83G/+0wIu42KrQ=
+github.com/paulgriffiths/pgtpm v0.0.0-20200328161400-3ae0111bcbd6/go.mod h1:D3UQaI2tDDgiNqCfws18LQKzat32Xq+LXZAMJGXIJR4=
+github.com/paulgriffiths/pki v0.0.0-20200307225355-0d177dbad955/go.mod h1:y/6nm2dAhsd0uF1fliZZ2psGdpGAypX5r8Ep5K+gFrg=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
@@ -37,6 +40,8 @@ golang.org/x/sys v0.0.0-20181205085412-a5c9d58dba9a h1:1n5lsVfiQW3yfsRGu98756EH1
 golang.org/x/sys v0.0.0-20181205085412-a5c9d58dba9a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 h1:uYVVQ9WP/Ds2ROhcaGPeIdVq0RIXVLwsHlnvJ+cT1So=
 golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200327173247-9dae0f8f5775 h1:TC0v2RSO1u2kn1ZugjrFXkRZAEaqMN/RW+OTZkBzmLE=
+golang.org/x/sys v0.0.0-20200327173247-9dae0f8f5775/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
