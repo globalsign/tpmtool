@@ -44,6 +44,7 @@ const (
 	flushCommand         = "flush"
 	helpCommand          = "help"
 	makeCredCommand      = "makecred"
+	nvReadCommand        = "nvread"
 	readPublicCommand    = "readpublic"
 )
 
@@ -125,6 +126,12 @@ var commands = []command{
 		flagSet:   fMakeCredSet,
 		cmdFunc:   makeCred,
 		usageFunc: usageMakeCred,
+	},
+	{
+		name:      nvReadCommand,
+		flagSet:   fNVReadSet,
+		cmdFunc:   nvRead,
+		usageFunc: usageNVRead,
 	},
 	{
 		name:      readPublicCommand,
@@ -214,6 +221,16 @@ var (
 	fMakeCredTPM        = fMakeCredSet.String(tpmFlagName, "", "")
 )
 
+// nvread command flag set.
+var (
+	fNVReadSet      = flag.NewFlagSet(nvReadCommand, flag.ExitOnError)
+	fNVReadHandle   handleFlag
+	fNVReadHelp     = fNVReadSet.Bool(helpFlagName, false, "")
+	fNVReadOut      = fNVReadSet.String(outFlagName, "", "")
+	fNVReadPassword = fNVReadSet.String(passwordFlagName, "", "")
+	fNVReadTPM      = fNVReadSet.String(tpmFlagName, "", "")
+)
+
 // readpublic command flag set.
 var (
 	fReadPublicSet    = flag.NewFlagSet(readPublicCommand, flag.ExitOnError)
@@ -235,6 +252,7 @@ func init() {
 	fEvictSet.Var(&fEvictHandle, handleFlagName, "")
 	fFlushSet.Var(&fFlushHandle, handleFlagName, "")
 	fMakeCredSet.Var(&fMakeCredHandle, handleFlagName, "")
+	fNVReadSet.Var(&fNVReadHandle, handleFlagName, "")
 	fReadPublicSet.Var(&fReadPublicHandle, handleFlagName, "")
 
 	for _, cmd := range commands {
@@ -402,6 +420,7 @@ func usageMain() error {
 	fmt.Printf("    %-*s flush a transient object\n", fw, flushCommand)
 	fmt.Printf("    %-*s show this usage information\n", fw, helpCommand)
 	fmt.Printf("    %-*s make an activation credential\n", fw, makeCredCommand)
+	fmt.Printf("    %-*s read a value from an area in NV memory\n", fw, nvReadCommand)
 	fmt.Printf("    %-*s read a TPM object's public area\n", fw, readPublicCommand)
 	fmt.Println()
 
@@ -548,6 +567,24 @@ func usageMakeCred() {
 	fmt.Printf("    -%-*s input file containing credential (default: stdin)\n", fw, inFlagName+" <path>")
 	fmt.Printf("    -%-*s public area input file\n", fw, publicAreaFlagName+" <path>")
 	fmt.Printf("    -%-*s encrypted secret output file\n", fw, secretOutFlagName+" <path>")
+	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
+	fmt.Println()
+}
+
+// usageNVRead outputs usage information for the nvread command.
+func usageNVRead() {
+	fmt.Printf("usage: %s %s [options]\n", appName, nvReadCommand)
+	fmt.Println()
+
+	fmt.Printf("The %s command reads a value from an area in NV memory.\n", nvReadCommand)
+	fmt.Println()
+
+	const fw = 29
+	fmt.Println("Options:")
+	fmt.Printf("    -%-*s NV index handle\n", fw, handleFlagName+" <integer>")
+	fmt.Printf("    -%-*s output this usage information\n", fw, helpFlagName)
+	fmt.Printf("    -%-*s output file (default: stdout)\n", fw, outFlagName+" <path>")
+	fmt.Printf("    -%-*s password\n", fw, passwordFlagName+" <string>")
 	fmt.Printf("    -%-*s TPM device (default: %s)\n", fw, tpmFlagName+" <path>|<hostname:port>", defaultTPMDevice)
 	fmt.Println()
 }
