@@ -1,0 +1,31 @@
+{
+    "type": "TPM2_ALG_ECC",
+    "name_alg": "TPM2_ALG_SHA256",
+    "attributes": [
+        "TPMA_OBJECT_RESTRICTED",
+        "TPMA_OBJECT_ADMINWITHPOLICY",
+        "TPMA_OBJECT_DECRYPT",
+        "TPMA_OBJECT_FIXEDTPM",
+        "TPMA_OBJECT_FIXEDPARENT",
+        "TPMA_OBJECT_SENSITIVEDATAORIGIN"
+    ],
+    "auth_policy": "g3GXZ0SEs/gakMyNRqXXJP1S124GUgtk8qHaGzMUaao=",
+    "ecc": {
+        "symmetric": {
+            "algorithm": "TPM2_ALG_AES",
+            "key_bits": 128,
+            "mode": "TPM2_ALG_CFB"
+        },
+        "scheme": {
+            "algorithm": "TPM2_ALG_NULL"
+        },
+	"elliptic_curve": "TPM2_ECC_NIST_P256",
+        "kdf": {
+            "algorithm": "TPM2_ALG_NULL"
+        },
+        "point": {
+            "x": 0,
+            "y": 0
+        }
+    }
+}
